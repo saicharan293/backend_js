@@ -14,8 +14,18 @@ app.get("/", function(req, res){
     res.send("first route and get")
 });
 
-app.get("/profile", function(req, res){
-    res.send("first profile route")
+// ikkada error ni ela use cheyali, ela display cheyali anedi chustunnam
+
+app.get("/profile", function(req, res, next){
+    return next(new Error("Something went wrong"))
+})
+
+// error handling using Express js
+// idi eppudu aina kani last lo ne undali
+
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
 })
 
 app.listen(3000);
