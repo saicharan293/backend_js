@@ -12,6 +12,12 @@ app.get("/",(req, res)=>{
 })
 
 
+// " : " ni route lo use chesamu ante, dynamic value pass aitundi ani artm
+app.get("/profile/:user", (req, res) => {
+    const user = req.params.user;
+    res.send(`response enti ante ${user}`);
+})
+
 app.listen(3000, function(){
     console.log("logs started running on: 3000");
     
