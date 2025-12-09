@@ -5,6 +5,7 @@ const path = require('path');
 const userModel = require('./Models/user.model');
 let bcrypt = require('bcrypt');
 let jwt = require('jsonwebtoken');
+const postModel = require('./Models/post.model');
 
 
 app.set("view engine", 'ejs');
@@ -37,24 +38,38 @@ app.post("/login", async(req, res)=>{
     let checkExisting = await userModel.findOne({email});
     if(!checkExisting) return res.status(401).send('Something went wrong');
     let response = await bcrypt.compare(password, checkExisting.hashedPassword);
-    if(!response) res.status(401).send("Unauthorized login");
+    if (!response) {
+        return res.status(401).send("Unauthorized login");
+    }
     let token = jwt.sign({email, userid: checkExisting._id}, "secret");
     res.cookie("token", token);
-    res.status(200).send("Succesfully logged in");
+    res.status(200).redirect("/profile");
 })
 
 app.get('/logout', async(req, res)=>{
-    res.cookie("token" ,"");
+    res.clearCookie("token");
     res.redirect("/login");
 })
 
-app.get("/profile", isLoggedIn, (req, res)=>{
-    res.send("profile page");
+app.get("/profile", isLoggedIn, async (req, res)=>{
+    let user = await userModel.findOne({email: req.user.email}).populate("posts");
+    res.render("profile", { user });
+})
+
+app.post("/posts", isLoggedIn, async (req, res)=>{
+    let newPost = await postModel.create({
+        user: req.user.userid,
+        content: req.body.content
+    });
+    await userModel.findByIdAndUpdate(req.user.userid, {$push: {posts: newPost._id}});
+    res.redirect("/profile");
 })
 
 function isLoggedIn(req, res, next){
     let token = req.cookies.token;
-    if(!token) res.redirect("/login");
+    if(!token){
+        return res.redirect("/login");
+    } 
     try {
         let data = jwt.verify(req.cookies.token, "secret");
         req.user = data;
